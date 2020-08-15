@@ -143,7 +143,7 @@ def process_clips(length_final_video=1200):
     """
     # Read clips_data.csv into pandas and sort by descending views
     clips_df = pd.read_csv("./clips_data.csv")
-    clips_df = clips_df.sort_values(by=["Values"], ascending=False)
+    clips_df = clips_df.sort_values(by=["Views"], ascending=False)
     clips_links_sorted = list(clips_df["Clip Link"])
 
     # Initialize counter for file names
@@ -152,7 +152,11 @@ def process_clips(length_final_video=1200):
     length_clips = 0
 
     # Deletes existing temp folder and recreates an empty one
-    shutil.rmtree("./temp")
+    try:
+        shutil.rmtree("./temp")
+    except:
+        pass
+
     os.mkdir("./temp")
 
     # Download each clip, name it chronologically, and check for length
@@ -177,7 +181,7 @@ def process_clips(length_final_video=1200):
 
 def merge_clips(list_of_clip_names):
     # Create command for merging clips
-    FFMPEG_STR = "ffmpeg {}-filter_complex \"[0:v] [0:a] [1:v] [1:a] [2:v] [2:a] concat=n={}:v=1:a=1 [v] [a]\" -map \"[v]\" -map \"[a]\" ./temp/combined.mkv".format(build_ffmpeg_input_str(list_of_clips), len(list_of_clips))
+    FFMPEG_STR = "ffmpeg {}-filter_complex \"[0:v] [0:a] [1:v] [1:a] [2:v] [2:a] concat=n={}:v=1:a=1 [v] [a]\" -map \"[v]\" -map \"[a]\" ./temp/combined.mkv".format(build_ffmpeg_input_str(list_of_clip_names), len(list_of_clip_names))
 
     # Passes command through command prompt
     os.system(FFMPEG_STR)

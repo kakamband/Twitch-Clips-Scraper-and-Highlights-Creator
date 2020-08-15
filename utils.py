@@ -5,6 +5,7 @@ from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.common.by import By
 from moviepy.editor import VideoFileClip
 from datetime import datetime, timedelta
+import pandas as pd
 
 def download(url, name):
     """

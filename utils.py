@@ -161,7 +161,10 @@ def process_clips(length_final_video=1200):
 
     # Download each clip, name it chronologically, and check for length
     for clip in clips_links_sorted:
-        download(clip, str(counter))
+        try:
+            download(clip, str(counter))
+        except:
+            continue
 
         length_clips += get_length_video("./temp/" + str(counter) + ".mkv")
         counter += 1

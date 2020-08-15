@@ -104,8 +104,11 @@ def scrape_clips():
             list_of_clips = list()
 
             # Waits until the clips section is loaded
-            wait = WebDriverWait(driver, 60)
-            preview = wait.until(expected_conditions.visibility_of_element_located((By.XPATH, "/html/body/div[1]/div/div[2]/div/main/div[2]/div[3]/div/div/div/div[1]/div[2]/div/div[3]/div/div/div/div/div[2]/div/div/div[1]/div/div/div/div[1]")))
+            try:
+                wait = WebDriverWait(driver, 60)
+                preview = wait.until(expected_conditions.visibility_of_element_located((By.XPATH, "/html/body/div[1]/div/div[2]/div/main/div[2]/div[3]/div/div/div/div[1]/div[2]/div/div[3]/div/div/div/div/div[2]/div/div/div[1]/div/div/div/div[1]")))
+            except:
+                continue
 
             # Scrapes every single link on the page and adds to list_of_clips if it is a valid clip link
             links = driver.find_elements_by_xpath("//a[@href]")
@@ -118,8 +121,12 @@ def scrape_clips():
                 driver.get(clip)
 
                 # Waits until view count is loaded and scrapes it
-                wait = WebDriverWait(driver, 60)
-                view_count = wait.until(expected_conditions.visibility_of_element_located((By.XPATH, "/html/body/div[1]/div/div[2]/div/main/div[2]/div[3]/div/div/div[1]/div[1]/div[2]/div/div[1]/div/div[1]/div[2]/div/div[3]/div/div[1]/div[2]")))
+                try:
+                    wait = WebDriverWait(driver, 60)
+                    view_count = wait.until(expected_conditions.visibility_of_element_located((By.XPATH, "/html/body/div[1]/div/div[2]/div/main/div[2]/div[3]/div/div/div[1]/div[1]/div[2]/div/div[1]/div/div[1]/div[2]/div/div[3]/div/div[1]/div[2]")))
+                except:
+                    continue
+
                 view_count = int(view_count.text.replace(",", ""))
 
                 if view_count < 50:

@@ -48,9 +48,15 @@ def build_ffmpeg_input_str(list_of_clip_names):
     """
     final_str = ""
     for clip in list_of_clip_names:
-        final_str += "-i {} ".format("./temp/" + clip)
+        final_str += "-i {} ".format(clip)
 
     return final_str
+
+def convert_to_1080p(video_path):
+    """
+    Upscales given video to 1080p using ffmpeg
+    """
+    os.system("ffmpeg -i {} -vf scale=1920:-2 -c:v libx264 -preset slow -crf 22 -c:a copy {}".format(str(video_path), str(video_path[:len(str(video_path))-4] + "-upscaled.mkv")))
 
 def scrape_clips():
     """
@@ -136,10 +142,10 @@ def scrape_clips():
                 # Write to clips_data.csv
                 writer.writerow([channel, clip, view_count])
 
-def process_clips(length_final_video=1200):
+def download_clips(length_final_video=1200):
     """
-    Reads all of the clips from clips_data.csv, downloads everything,
-    and processes everything into one video
+    Reads all of the clips from clips_data.csv and downloads length_final_video seconds long
+    worth of clips from most viewed to least
     """
     # Read clips_data.csv into pandas and sort by descending views
     clips_df = pd.read_csv("./clips_data.csv")
@@ -172,26 +178,52 @@ def process_clips(length_final_video=1200):
         if length_clips >= length_final_video:
             break
 
-    # Pause for manual check of all clips
-    x = input("Awaiting manual file check")
-
+def process_clips():
+    """
+    Converts and merges all clips downloaded using ffmpeg
+    """
     # Gets all of the video names from the temp directory and shuffles
     downloaded_clips = os.listdir("./temp")
-    random.shuffle(downloaded_clips)
 
-    # Begin merging clips into one video
-    merge_clips(downloaded_clips)
+    # Add path to all files
+    downloaded_clips = list(map(lambda file: "./temp/" + file, downloaded_clips))
 
-def merge_clips(list_of_clip_names):
+    # Checks if the resolution of all of the videos are the same
+    for clip in downloaded_clips:
+        video = VideoFileClip(clip)
+
+        if video.h != 1080 and video.w != 1920:
+            convert_to_1080p(clip)
+            downloaded_clips.append(clip[:len(str(clip)) - 4] + "-upscaled.mkv")
+            downloaded_clips.remove(clip)
+
     # Create command for merging clips
-    FFMPEG_STR = "ffmpeg {}-filter_complex \"[0:v] [0:a] [1:v] [1:a] [2:v] [2:a] concat=n={}:v=1:a=1 [v] [a]\" -map \"[v]\" -map \"[a]\" ./temp/combined.mkv".format(build_ffmpeg_input_str(list_of_clip_names), len(list_of_clip_names))
+    FFMPEG_STR = "ffmpeg {}-filter_complex \"[0:v] [0:a] [1:v] [1:a] [2:v] [2:a] concat=n={}:v=1:a=1 [v] [a]\" -map \"[v]\" -map \"[a]\" ./temp/combined.mkv".format(build_ffmpeg_input_str(downloaded_clips), len(downloaded_clips))
 
     # Passes command through command prompt
     os.system(FFMPEG_STR)
 
+    # Deletes existing temp folder and recreates an empty one
+    try:
+        shutil.rmtree("./final")
+    except:
+        pass
+
+    os.mkdir("./final")
+
     # Final command for converting final.mkv to final.mp4
     os.system("ffmpeg -i ./temp/combined.mkv -codec copy ./final/final.mp4")
 
+def run():
+    """
+    Run the process of scraping, downloading, and processing
+    """
+    scrape_clips()
+    download_clips()
+    process_clips()
+
 if __name__ == "__main__":
-	scrape_clips()
-	process_clips()
+    run()
+    # scrape_clips()
+    # download_clips()
+    # process_clips()

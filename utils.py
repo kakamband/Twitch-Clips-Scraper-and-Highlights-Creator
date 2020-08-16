@@ -214,16 +214,8 @@ def process_clips():
     # Passes command through command prompt
     os.system(FFMPEG_STR)
 
-    # Deletes existing final folder and recreates an empty one
-    try:
-        shutil.rmtree("./final")
-    except:
-        pass
-
-    os.mkdir("./final")
-
     # Final command for converting final.mkv to final.mp4
-    os.system("ffmpeg -i ./temp/combined.mkv -codec copy ./final/final.mp4")
+    os.system("ffmpeg -i ./temp/combined.mkv -codec copy ./final.mp4")
 
 def run(length_final_video=660):
     """
@@ -235,7 +227,7 @@ def run(length_final_video=660):
     process_clips()
 
 if __name__ == "__main__":
-    # run()
+    run()
     # scrape_clips()
     # download_clips()
-    process_clips()
+    # process_clips()

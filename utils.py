@@ -94,7 +94,7 @@ def scrape_clips():
 
             try:
                 # Waits until the most recent stream's preview is loaded and scrapes it's title for the date of their last stream
-                wait = WebDriverWait(driver, 60)
+                wait = WebDriverWait(driver, 10)
                 prev_stream_element = wait.until(expected_conditions.visibility_of_element_located((By.XPATH, "/html/body/div[1]/div/div[2]/div/main/div[2]/div[3]/div/div/div/div[1]/div[2]/div/div[3]/div/div/div/div/div[2]/div/div[1]/div[1]/article/div[2]/div/div/div[5]/a/div/div/div[1]/div[2]/div/div/div[2]/img")))
 
                 # Continue onto next channel if their last stream was not today or yesterday
@@ -112,7 +112,7 @@ def scrape_clips():
 
             # Waits until the clips section is loaded
             try:
-                wait = WebDriverWait(driver, 60)
+                wait = WebDriverWait(driver, 10)
                 preview = wait.until(expected_conditions.visibility_of_element_located((By.XPATH, "/html/body/div[1]/div/div[2]/div/main/div[2]/div[3]/div/div/div/div[1]/div[2]/div/div[3]/div/div/div/div/div[2]/div/div/div[1]/div/div/div/div[1]")))
             except:
                 continue
@@ -129,10 +129,14 @@ def scrape_clips():
 
                 # Waits until view count is loaded and scrapes it
                 try:
-                    wait = WebDriverWait(driver, 60)
+                    wait = WebDriverWait(driver, 10)
                     view_count = wait.until(expected_conditions.visibility_of_element_located((By.XPATH, "/html/body/div[1]/div/div[2]/div/main/div[2]/div[3]/div/div/div[1]/div[1]/div[2]/div/div[1]/div/div[1]/div[2]/div/div[3]/div/div[1]/div[2]")))
                 except:
-                    continue
+                    try:
+                        wait = WebDriverWait(driver, 10)
+                        view_count = wait.until(expected_conditions.visibility_of_element_located((By.XPATH, "/html/body/div[1]/div/div[2]/div/main/div[2]/div[3]/div/div/div[1]/div[1]/div[2]/div/div[1]/div/div[1]/div[2]/div/div[3]/div/div[1]/div[2]")))
+                    except:
+                        continue
 
                 view_count = int(view_count.text.replace(",", ""))
 
@@ -142,7 +146,7 @@ def scrape_clips():
                 # Write to clips_data.csv
                 writer.writerow([channel, clip, view_count])
 
-def download_clips(length_final_video=1200):
+def download_clips(length_final_video=660):
     """
     Reads all of the clips from clips_data.csv and downloads length_final_video seconds long
     worth of clips from most viewed to least
@@ -182,28 +186,35 @@ def process_clips():
     """
     Converts and merges all clips downloaded using ffmpeg
     """
-    # Gets all of the video names from the temp directory and shuffles
+    # Gets all of the video names from the temp directory
     downloaded_clips = os.listdir("./temp")
 
     # Add path to all files
     downloaded_clips = list(map(lambda file: "./temp/" + file, downloaded_clips))
 
+    # Initialize list for all of the paths of the final clips
+    final_clips = list()
+
     # Checks if the resolution of all of the videos are the same
     for clip in downloaded_clips:
         video = VideoFileClip(clip)
 
+        # Convert to 1080p if not 1080p
         if video.h != 1080 and video.w != 1920:
             convert_to_1080p(clip)
-            downloaded_clips.append(clip[:len(str(clip)) - 4] + "-upscaled.mkv")
-            downloaded_clips.remove(clip)
+            final_clips.append(clip[:len(str(clip)) - 4] + "-upscaled.mkv")
+        else:
+            final_clips.append(clip)
+
+    random.shuffle(final_clips)
 
     # Create command for merging clips
-    FFMPEG_STR = "ffmpeg {}-filter_complex \"[0:v] [0:a] [1:v] [1:a] [2:v] [2:a] concat=n={}:v=1:a=1 [v] [a]\" -map \"[v]\" -map \"[a]\" ./temp/combined.mkv".format(build_ffmpeg_input_str(downloaded_clips), len(downloaded_clips))
+    FFMPEG_STR = "ffmpeg {}-filter_complex \"[0:v] [0:a] [1:v] [1:a] [2:v] [2:a] concat=n={}:v=1:a=1 [v] [a]\" -map \"[v]\" -map \"[a]\" ./temp/combined.mkv".format(build_ffmpeg_input_str(final_clips), len(final_clips))
 
     # Passes command through command prompt
     os.system(FFMPEG_STR)
 
-    # Deletes existing temp folder and recreates an empty one
+    # Deletes existing final folder and recreates an empty one
     try:
         shutil.rmtree("./final")
     except:
@@ -214,16 +225,17 @@ def process_clips():
     # Final command for converting final.mkv to final.mp4
     os.system("ffmpeg -i ./temp/combined.mkv -codec copy ./final/final.mp4")
 
-def run():
+def run(length_final_video=660):
     """
     Run the process of scraping, downloading, and processing
     """
     scrape_clips()
-    download_clips()
+    download_clips(length_final_video)
+    x = input("Pausing for manual check. ")
     process_clips()
 
 if __name__ == "__main__":
-    run()
+    # run()
     # scrape_clips()
     # download_clips()
-    # process_clips()
+    process_clips()

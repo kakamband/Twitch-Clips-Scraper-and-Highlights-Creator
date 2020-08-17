@@ -217,12 +217,12 @@ def process_clips():
     # Final command for converting final.mkv to final.mp4
     os.system("ffmpeg -i ./temp/combined.mkv -codec copy ./final.mp4")
 
-def run(length_final_video=660):
+def run():
     """
     Run the process of scraping, downloading, and processing
     """
     scrape_clips()
-    download_clips(length_final_video)
+    download_clips()
     x = input("Pausing for manual check. ")
     process_clips()
 
